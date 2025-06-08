@@ -1,2 +1,4 @@
 //list available topics
 C:\kafka\bin\windows\kafka-topics.bat --bootstrap-server localhost:9092 --list
+
+{"eventId":"c1d2e3f4-a5b6-7890-1234-567890fedcba","eventType":"PAYMENT_SUCCESS","eventVersion":"v1.0","timestamp":"2025-06-08T15:45:00Z","correlationId":"tx-12345-order-abc","source":"payment-service","data":{"orderId":"ORD-XYZ-789","transactionId":"PAY-TRN-101","amount":1250.00,"currency":"USD","paymentMethod":"CreditCard","customerId":"CUST-456","status":"COMPLETED"},"metadata":{"traceId":"trace-xyz-789","userId":"user-gouth"}}

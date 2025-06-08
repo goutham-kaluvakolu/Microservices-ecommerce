@@ -8,6 +8,7 @@ import order_service.microservice.repository.OutboxEventRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.shop.events.BaseEvent;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -72,9 +73,32 @@ public class OrderServiceForEvents {
         for (OutboxEvent event : pendingEvents) {
             try {
                 // Determine the Kafka topic. You might use eventType or a mapping.
-                String kafkaTopic =  event.getEventType().toLowerCase();
-                log.debug("Sending event ID: {} to topic: {}", event.getId(), kafkaTopic);
 
+                String kafkaTopic =  event.getEventType().toLowerCase();
+                if(kafkaTopic.equals("order_created")){
+                    kafkaTopic = "order_topic";
+                }else if(kafkaTopic.equals("inventory_reserved")){
+                    kafkaTopic = "inventory_topic";
+                }else if(kafkaTopic.equals("payment_success")){
+                    kafkaTopic = "payment_topic";
+                }else if(kafkaTopic.equals("notification_sent")){
+                    kafkaTopic = "notification_topic";
+                }
+
+                log.debug("Sending event ID: {} to topic: {}", event.getId(), kafkaTopic);
+                
+                //convert the event to a base event
+                BaseEvent baseEvent = new BaseEvent();
+                baseEvent.setEventId(event.getAggregateId());
+                baseEvent.setEventType(event.getEventType());
+                baseEvent.setEventVersion("1.0");
+                baseEvent.setTimestamp(event.getCreatedAt().toString());
+                baseEvent.setCorrelationId(event.getCorrelationId());
+                baseEvent.setSource("order-service");
+                baseEvent.setData(event.getPayload());
+                baseEvent.setMetadata(null);
+
+                
                 // Send the payload to Kafka. Use event.getId() as the key for partitioning.
                 kafkaTemplate.send(kafkaTopic, event.getId(), event.getPayload())
                     .whenComplete((result, ex) -> {

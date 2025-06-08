@@ -5,7 +5,7 @@ REM Set Kafka paths - adjust these if your Kafka installation is in a different 
 SET "KAFKA_HOME=C:\kafka"
 SET "KAFKA_BIN=%KAFKA_HOME%\bin\windows"
 SET "BOOTSTRAP_SERVER=localhost:9092"
-SET "TOPICS_TO_RECREATE=order_created inventory_reserved payment_success notification_sent"
+SET "TOPICS_TO_RECREATE=order_topic inventory_topic payment_topic notification_topic"
 
 echo --- Starting Full Kafka Topic Reset and Re-creation Process ---
 echo.
