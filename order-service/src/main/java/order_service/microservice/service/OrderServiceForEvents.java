@@ -29,10 +29,10 @@ public class OrderServiceForEvents {
     private static final Logger log = LoggerFactory.getLogger(OrderServiceForEvents.class);
 
     private final OutboxEventRepository outboxEventRepository;
-    private final KafkaTemplate<String, String> kafkaTemplate; // Inject KafkaTemplate
+    private final KafkaTemplate<String, BaseEvent> kafkaTemplate; // Inject KafkaTemplate
     // private final ObjectMapper objectMapper; // Inject ObjectMapper for potential payload re-serialization
 
-    public OrderServiceForEvents(OutboxEventRepository outboxEventRepository, KafkaTemplate<String, String> kafkaTemplate) {
+    public OrderServiceForEvents(OutboxEventRepository outboxEventRepository, KafkaTemplate<String, BaseEvent> kafkaTemplate) {
         this.outboxEventRepository = outboxEventRepository;
         this.kafkaTemplate = kafkaTemplate;
         // this.objectMapper = objectMapper;
@@ -100,7 +100,7 @@ public class OrderServiceForEvents {
 
                 
                 // Send the payload to Kafka. Use event.getId() as the key for partitioning.
-                kafkaTemplate.send(kafkaTopic, event.getId(), event.getPayload())
+                kafkaTemplate.send(kafkaTopic, baseEvent.getEventId(), baseEvent)
                     .whenComplete((result, ex) -> {
                         if (ex == null) {
                             // Successfully sent to Kafka, now update status in DB
