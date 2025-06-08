@@ -1,0 +1,14 @@
+#!/bin/bash
+
+# Navigate to your Kafka directory (adjust the path if necessary)
+# For WSL, if Kafka is at C:\kafka, it will be /mnt/c/kafka
+KAFKA_HOME="c:/kafka" # Adjust this path to your Kafka installation
+
+echo "Starting Kafka broker..."
+cd "$KAFKA_HOME" || { echo "Error: Could not change to Kafka directory. Check KAFKA_HOME path."; exit 1; }
+./bin/kafka-server-start.sh ./config/server.properties &
+
+echo "Kafka broker started in the background."
+echo "Ensure ZooKeeper is running before starting Kafka."
+echo "You can check its status by looking for processes or checking logs."
+echo "To stop it, you might need to find its process ID (PID) and kill it, or use the stop script if available."
