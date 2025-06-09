@@ -8,17 +8,17 @@ import java.util.stream.Collectors;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.core.JsonProcessingException;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.shop.events.OrderCreatedEvent;
+import com.shop.events.OrderCreatedEvent.OrderItemEvent;
 import com.shop.models.CartResponseDto;
 import com.shop.models.OrderDto;
-import order_service.microservice.events.OrderCreatedEvent;
-import order_service.microservice.events.OrderCreatedEvent.OrderItemEvent;
+import order_service.microservice.entity.OutboxEvent;
 
 import jakarta.transaction.Transactional;
 import order_service.microservice.entity.Order;
-import order_service.microservice.entity.OutboxEvent;
 import order_service.microservice.repository.OrderRepository;
 
 @Service
@@ -28,7 +28,6 @@ public class OrderServiceForDB {
     private final OutboxEventRepository outboxEventRepository;
     private final OrderRepository orderRepository;
     private final ObjectMapper objectMapper;
-
     public OrderServiceForDB(OrderRepository orderRepository, 
                            OutboxEventRepository outboxEventRepository, 
                            OrderServiceForEvents orderServiceForEvents,
@@ -66,20 +65,22 @@ public class OrderServiceForDB {
                 .build()).collect(Collectors.toList()))
             .build();
 
-        String eventPayloadJson;
-        try {
-            eventPayloadJson = objectMapper.writeValueAsString(orderCreatedEvent);
-            System.out.println("DEBUG: JSON payload generated for Outbox: " + eventPayloadJson);
-        } catch (JsonProcessingException e) {
-            System.err.println("ERROR: Failed to serialize OrderCreatedEvent to JSON: " + e.getMessage());
-            throw new RuntimeException("Error serializing event payload", e);
-        }
+        // String eventPayloadJson;
+        // try {
+        //     eventPayloadJson = objectMapper.writeValueAsString(orderCreatedEvent);
+        //     System.out.println("DEBUG: JSON payload generated for Outbox: " + eventPayloadJson);
+        // } catch (JsonProcessingException e) {
+        //     System.err.println("ERROR: Failed to serialize OrderCreatedEvent to JSON: " + e.getMessage());
+        //     throw new RuntimeException("Error serializing event payload", e);
+        // }
+
+        JsonNode eventPayloadMap = objectMapper.valueToTree(orderCreatedEvent);
 
         OutboxEvent outboxEvent = OutboxEvent.builder()
             .id(UUID.randomUUID().toString())
             .eventType("ORDER_CREATED")
             .aggregateId(order.getOrderId())
-            .payload(eventPayloadJson)
+            .payload(eventPayloadMap)
             .status("PENDING")
             .createdAt(Instant.now())
             .retryCount(0)

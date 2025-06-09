@@ -1,5 +1,6 @@
 package order_service.microservice.service;
 
+import com.shop.events.OrderCreatedEvent;
 import com.shop.models.CartResponseDto;
 // import order_service.microservice.dto.OrderDto;
 // import order_service.microservice.dto.OrderItemDto;
@@ -8,7 +9,6 @@ import com.shop.models.OrderItemDto;
 import order_service.microservice.entity.Order;
 import order_service.microservice.entity.OrderItem;
 import order_service.microservice.repository.OrderRepository;
-import order_service.microservice.events.OrderCreatedEvent;
 import lombok.extern.slf4j.Slf4j;
 
 import org.springframework.stereotype.Service;

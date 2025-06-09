@@ -7,16 +7,12 @@ import order_service.microservice.entity.OutboxEvent;
 import order_service.microservice.repository.OutboxEventRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.shop.events.BaseEvent;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 
-import java.time.Instant;
 import java.util.List;
-import java.util.UUID;
 
 /**
  * Service class for managing Outbox Events.
@@ -86,7 +82,6 @@ public class OrderServiceForEvents {
                 }
 
                 log.debug("Sending event ID: {} to topic: {}", event.getId(), kafkaTopic);
-                
                 //convert the event to a base event
                 BaseEvent baseEvent = new BaseEvent();
                 baseEvent.setEventId(event.getAggregateId());

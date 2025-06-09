@@ -1,68 +1,51 @@
-// package com.ecommers.inventory_service.producer;
+package com.ecommers.inventory_service.producer;
 
-// import com.ecommers.inventory_service.events.InventoryReservedEventSuccess;
-// import com.ecommers.inventory_service.events.InventoryReservedEventFail; // Import the new failure event
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.stereotype.Component;
+import com.shop.events.BaseEvent;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
-// import org.springframework.beans.factory.annotation.Value;
-// import org.springframework.kafka.core.KafkaTemplate;
-// import org.springframework.stereotype.Component;
+@Slf4j
+@Component
+@RequiredArgsConstructor
+public class InventoryEventProducer {
 
-// @Component
-// public class InventoryEventProducer {
+    @Value("${kafka.topic.inventory.events.publish.name}")
+    private String inventoryEventsTopicName;
 
-//     @Value("${kafka.topic.inventory.events.name}")
-//     private String inventoryEventsTopicName; // Topic for successful reservation events
+    private final KafkaTemplate<String, BaseEvent> kafkaTemplate;
 
-//     // New: Inject the topic name for failure events from application.properties
-//     @Value("${kafka.topic.inventory.failure.name}")
-//     private String inventoryFailureTopicName; // Topic for failed reservation events
+    public void sendInventoryReservedEventSuccess(BaseEvent event) {
+        String kafkaTopic = "inventory_topic";
+        log.debug("Sending event ID: {} to topic: {}", event.getEventId(), kafkaTopic);
 
-//     private final KafkaTemplate<String, Object> kafkaTemplate;
+        kafkaTemplate.send(kafkaTopic, event.getEventId(), event)
+            .whenComplete((result, ex) -> {
+                if (ex == null) {
+                    log.info("Successfully sent event ID: {} to Kafka with offset: {}", 
+                        event.getEventId(), result.getRecordMetadata().offset());
+                } else {
+                    log.error("Failed to send event ID: {} to Kafka: {}", 
+                        event.getEventId(), ex.getMessage());
+                }
+            });
+    }
 
-//     public InventoryEventProducer(KafkaTemplate<String, Object> kafkaTemplate) {
-//         this.kafkaTemplate = kafkaTemplate;
-//     }
+    public void sendInventoryReservationFailedEvent(BaseEvent event) {
+        String kafkaTopic = "inventory_topic";
+        log.debug("Sending failed event ID: {} to topic: {}", event.getEventId(), kafkaTopic);
 
-//     /**
-//      * Sends an InventoryReservedEventSuccess to the Kafka topic.
-//      * This is for the happy path (inventory successfully reserved).
-//      * @param event The InventoryReservedEventSuccess to send.
-//      */
-//     public void sendInventoryReservedEventSuccess(InventoryReservedEventSuccess event) {
-//         String key = event.getorderId(); // Use orderId as the message key
-
-//         kafkaTemplate.send(inventoryEventsTopicName, key, event)
-//             .whenComplete((result, ex) -> {
-//                 if (ex == null) {
-//                     System.out.println("InventoryReservedEventSuccess sent successfully to topic: " + inventoryEventsTopicName +
-//                                        " with offset: " + result.getRecordMetadata().offset() +
-//                                        " for orderId: " + event.getorderId() +
-//                                        " | Status: " + event.getReservationStatus());
-//                 } else {
-//                     System.err.println("Failed to send InventoryReservedEventSuccess for orderId: " + event.getorderId() +
-//                                        " due to: " + ex.getMessage());
-//                 }
-//             });
-//     }
-
-//     /**
-//      * Sends an InventoryReservationFailedEvent to a dedicated Kafka topic.
-//      * This is for handling inventory reservation failures.
-//      * @param event The InventoryReservationFailedEvent to send.
-//      */
-//     public void sendInventoryReservationFailedEvent(InventoryReservedEventFail event) {
-//         String key = String.valueOf(event.getorderId()); // Use orderId as the message key
-
-//         kafkaTemplate.send(inventoryFailureTopicName, key, event)
-//             .whenComplete((result, ex) -> {
-//                 if (ex == null) {
-//                     System.out.println("InventoryReservationFailedEvent sent successfully to topic: " + inventoryFailureTopicName +
-//                                        " with offset: " + result.getRecordMetadata().offset() +
-//                                        " for orderId: " + event.getorderId());
-//                 } else {
-//                     System.err.println("Failed to send InventoryReservationFailedEvent for orderId: " + event.getorderId() +
-//                                        " due to: " + ex.getMessage());
-//                 }
-//             });
-//     }
-// }
+        kafkaTemplate.send(kafkaTopic, event.getEventId(), event)
+            .whenComplete((result, ex) -> {
+                if (ex == null) {
+                    log.info("Successfully sent failed event ID: {} to Kafka with offset: {}", 
+                        event.getEventId(), result.getRecordMetadata().offset());
+                } else {
+                    log.error("Failed to send failed event ID: {} to Kafka: {}", 
+                        event.getEventId(), ex.getMessage());
+                }
+            });
+    }
+}

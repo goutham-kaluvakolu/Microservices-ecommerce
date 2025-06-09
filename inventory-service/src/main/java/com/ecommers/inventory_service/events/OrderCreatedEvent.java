@@ -19,7 +19,7 @@ import java.util.List;
 @Builder
 public class OrderCreatedEvent {
     private String orderId;
-    private Long userId; // Corrected: Changed type from UUID to String
+    private String userId; // Corrected: Changed type from UUID to String
     private BigDecimal totalAmount;
     private String currency;
     private Instant timestamp;

@@ -1,5 +1,5 @@
 // src/main/java/com/example/orderservice/outbox/OutboxEvent.java
-package order_service.microservice.entity;
+package com.ecommers.inventory_service.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;

@@ -1,0 +1,5 @@
+{"properties": [{
+  "name": "kafka.topic.inventory.events.publish.name",
+  "type": "java.lang.String",
+  "description": "A description for 'kafka.topic.inventory.events.publish.name'"
+}]}

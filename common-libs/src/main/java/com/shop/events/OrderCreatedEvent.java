@@ -1,5 +1,5 @@
 // package order_service.microservice.events.OrderCreatedEvent
-package order_service.microservice.events;
+package com.shop.events;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -8,7 +8,6 @@ import lombok.NoArgsConstructor;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
-import java.util.UUID;
 
 /**
  * Represents an event published when a new order is successfully initiated in the Order Service.

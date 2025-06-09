@@ -5,3 +5,5 @@ C:\kafka\bin\windows\kafka-topics.bat --bootstrap-server localhost:9092 --list
 
 
 {"eventId":"cc6e932e-4830-4514-a334-7ea5b70cf0f6","eventType":"ORDER_CREATED","eventVersion":"1.0","timestamp":"2025-06-08T22:00:55.515861500Z","correlationId":null,"source":"order-service","data":"{\"orderId\":\"cc6e932e-4830-4514-a334-7ea5b70cf0f6\",\"userId\":\"user1234\\r\\n\",\"totalAmount\":2,\"currency\":\"USD\",\"timestamp\":\"2025-06-08T22:00:55.492864800Z\",\"items\":[{\"productId\":\"prod-789\",\"quantity\":2,\"priceAtOrderTime\":0}]}","metadata":null}
+
+{"eventId":"7b013b59-3653-4948-8030-bee059b80708","eventType":"ORDER_CREATED","eventVersion":"1.0","timestamp":"2025-06-09T03:04:46.693614900Z","correlationId":null,"source":"order-service","data":{"orderId":"7b013b59-3653-4948-8030-bee059b80708","userId":"user12\r\n","totalAmount":2,"currency":"USD","timestamp":"2025-06-09T03:04:46.638137700Z","items":[{"productId":"PROD-A001","quantity":2,"priceAtOrderTime":0}]},"metadata":null}

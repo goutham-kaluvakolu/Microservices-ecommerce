@@ -1,7 +1,9 @@
 package com.ecommers.inventory_service.service;
 
+import java.time.Instant;
 // import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 // import org.springframework.beans.factory.annotation.Autowired;
@@ -10,37 +12,55 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.ecommers.inventory_service.dto.InventoryItemDto;
+import com.ecommers.inventory_service.dto.InventoryReservedItemDto;
 // import com.ecommers.inventory_service.dto.InventoryReservedItemDto;
 import com.ecommers.inventory_service.entity.InventoryItem;
+import com.ecommers.inventory_service.entity.InventoryReservation;
+import com.ecommers.inventory_service.entity.OutboxEvent;
+import com.ecommers.inventory_service.entity.ReservationStatus;
+import com.ecommers.inventory_service.events.InventoryReservedEventSuccess;
 // import com.ecommers.inventory_service.entity.InventoryReservation;
 // import com.ecommers.inventory_service.entity.ReservationStatus;
 // import com.ecommers.inventory_service.events.InventoryReservedEventFail;
 // import com.ecommers.inventory_service.events.InventoryReservedEventSuccess;
 import com.ecommers.inventory_service.events.OrderCreatedEvent;
+import com.ecommers.inventory_service.producer.InventoryEventProducer;
 // import com.ecommers.inventory_service.producer.InventoryEventProducer;
 import com.ecommers.inventory_service.repository.InventoryRepository;
 import com.ecommers.inventory_service.repository.InventoryReservationRepository;
+import com.ecommers.inventory_service.repository.OutboxRepository;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.shop.events.BaseEvent;
+
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Service
 public class InventoryService {
 
+    private final OutboxRepository outboxRepository;
+
     private  InventoryReservationRepository inventoryReservationRepository;
     
     private InventoryRepository inventoryRepository;
 
-    // private InventoryEventProducer inventoryEventProducer;
+
+    private InventoryEventProducer inventoryEventProducer;
+
+    private ObjectMapper objectMapper;
 
     // public InventoryService(InventoryReservationRepository inventoryReservationRepository, InventoryRepository inventoryRepository, InventoryEventProducer inventoryEventProducer) {
     //     this.inventoryReservationRepository = inventoryReservationRepository;
     //     this.inventoryRepository = inventoryRepository;
     //     // this.inventoryEventProducer = inventoryEventProducer;
     // }
-    public InventoryService(InventoryReservationRepository inventoryReservationRepository, InventoryRepository inventoryRepository) {
+    public InventoryService(InventoryReservationRepository inventoryReservationRepository, InventoryRepository inventoryRepository, OutboxRepository outboxRepository, ObjectMapper objectMapper, InventoryEventProducer inventoryEventProducer) {
         this.inventoryReservationRepository = inventoryReservationRepository;
         this.inventoryRepository = inventoryRepository;
-        // this.inventoryEventProducer = inventoryEventProducer;
+        this.outboxRepository = outboxRepository;
+        this.objectMapper = objectMapper;
+        this.inventoryEventProducer = inventoryEventProducer;
     }
 
     public InventoryItemDto getInventory(String productCode) {
@@ -69,7 +89,7 @@ public class InventoryService {
 
     @Transactional // Ensures atomicity for all DB operations within this method
     public void handleOrderCreatedEvent(OrderCreatedEvent event) {
-        String testStatus = "fail";
+        String testStatus = "success";
         log.info("Processing order event for orderId: {}", event.getOrderId());
 
         // Iterate over each item in the order to reserve inventory
@@ -92,32 +112,94 @@ public class InventoryService {
                 throw new RuntimeException("Insufficient available stock for product: " + productCode);
             }
 
-            
-
-            // 5. Save the updated InventoryItem.
-            // JPA will automatically handle the version increment and optimistic locking check here.
-            // If a concurrent update occurred, an OptimisticLockingFailureException will be thrown.
             try {
                 if(testStatus.equals("fail")){
                     throw new OptimisticLockingFailureException("Test failed");
                 }
                 // 3. Update stock quantities in the InventoryItem entity
-            inventoryItem.setAvailableStock(inventoryItem.getAvailableStock() - requestedQuantity);
-            inventoryItem.setReservedStock(inventoryItem.getReservedStock() + requestedQuantity);
-
+                inventoryItem.setAvailableStock(inventoryItem.getAvailableStock() - requestedQuantity);
+                inventoryItem.setReservedStock(inventoryItem.getReservedStock() + requestedQuantity);
                 inventoryRepository.save(inventoryItem);
-                // InventoryReservedEventSuccess inventoryReservedEvent = InventoryReservedEventSuccess.builder()
-                // .orderId(String.valueOf(event.getOrderId()))
-                // .reservedItems(event.getItems().stream()
-                // .map(orderItem -> InventoryReservedItemDto.builder()
-                // .productId(orderItem.getProductId())
-                // .reservedQuantity(orderItem.getQuantity())
-                // .build())
-                // .collect(Collectors.toList()))
-                // .reservationStatus(ReservationStatus.CONFIRMED.name())
-                // .build();
-                // inventoryEventProducer.sendInventoryReservedEventSuccess(inventoryReservedEvent);
-                // log.info("InventoryReservedEvent sent successfully to topic: {}", inventoryEventsTopicName);
+
+                //store in outbox
+                InventoryReservation inventoryReservation = InventoryReservation.builder()
+                    .orderId(event.getOrderId())
+                    .product(inventoryItem)
+                    .quantity(requestedQuantity)
+                    .reservationStatus(ReservationStatus.CONFIRMED)
+                    .build();
+
+                inventoryReservationRepository.save(inventoryReservation);
+
+                //objectMapper
+                //inventoryReservation to json
+                JsonNode inventoryReservationJson = objectMapper.valueToTree(inventoryReservation);
+
+                //send event to topic
+                OutboxEvent outboxEvent = OutboxEvent.builder()
+                .id(UUID.randomUUID().toString())
+                .eventType("INVENTORY_RESERVED_SUCCESS")
+                .aggregateId(event.getOrderId())
+                .payload(inventoryReservationJson)
+                .status("PENDING")
+                .createdAt(Instant.now())
+                .retryCount(0) // <--- Add this line to initialize retryCount
+                .build();
+                outboxRepository.save(outboxEvent);
+
+                // Fetch pending outbox events
+                List<OutboxEvent> pendingEvents = outboxRepository.findByStatus("PENDING");
+                    pendingEvents.forEach(pendingEvent -> {
+                    // Convert OutboxEvent to InventoryReservedEventSuccess
+                    InventoryReservedEventSuccess inventoryEvent = InventoryReservedEventSuccess.builder()
+                        .orderId(pendingEvent.getAggregateId())
+                        .reservationStatus("CONFIRMED")
+                        .build();
+                    
+                    //create base event
+                    BaseEvent baseEvent = BaseEvent.builder()
+                        .eventId(UUID.randomUUID().toString())
+                        .eventType("INVENTORY_RESERVED_SUCCESS")
+                        .eventVersion("1.0")
+                        .timestamp(Instant.now().toString())
+                        .source("inventory-service")
+                        .data(inventoryEvent)
+                        .metadata(null)
+                        .build();
+                    
+                    // Send event to Kafka topic
+                    inventoryEventProducer.sendInventoryReservedEventSuccess(baseEvent);
+                    
+                    // Update outbox event status to PROCESSED
+                    pendingEvent.setStatus("PROCESSED");
+                    // outboxRepository.save(pendingEvent);
+                });
+
+                InventoryReservedEventSuccess inventoryReservedEvent = InventoryReservedEventSuccess.builder()
+                .orderId(String.valueOf(event.getOrderId()))
+                .reservedItems(event.getItems().stream()
+                .map(orderItem -> InventoryReservedItemDto.builder()
+                .productId(orderItem.getProductId())
+                .reservedQuantity(orderItem.getQuantity())
+                .build())
+                .collect(Collectors.toList()))
+                .reservationStatus(ReservationStatus.CONFIRMED.name())
+                .build();
+
+                //create base event
+                BaseEvent baseEvent = BaseEvent.builder()
+                    .eventId(UUID.randomUUID().toString())
+                    .eventType("INVENTORY_RESERVED")
+                    .eventVersion("1.0")
+                    .timestamp(Instant.now().toString())
+                    .source("inventory-service")
+                    .data(inventoryReservedEvent)
+                    .metadata(null)
+                    .build();
+                inventoryEventProducer.sendInventoryReservedEventSuccess(baseEvent);
+                log.info("InventoryReservedEvent sent successfully to topic: {}", baseEvent.getEventId());
+
+
             } catch (OptimisticLockingFailureException e) {
 
                 // InventoryReservedEventFail inventoryReservedEvent = InventoryReservedEventFail.builder()
