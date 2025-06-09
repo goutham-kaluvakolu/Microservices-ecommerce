@@ -7,10 +7,11 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import order_service.microservice.dto.InventoryReservedItemDto;
 
 import java.time.LocalDateTime;
 import java.util.List;
+
+import com.shop.events.InventoryReservedItemDto;
 
 // This DTO will likely be re-used from your order-service,
 // or defined identically in inventory-service if it's a shared contract

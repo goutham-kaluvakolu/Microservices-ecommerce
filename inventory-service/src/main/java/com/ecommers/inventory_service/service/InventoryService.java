@@ -12,27 +12,20 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.ecommers.inventory_service.dto.InventoryItemDto;
-import com.ecommers.inventory_service.dto.InventoryReservedItemDto;
-// import com.ecommers.inventory_service.dto.InventoryReservedItemDto;
 import com.ecommers.inventory_service.entity.InventoryItem;
 import com.ecommers.inventory_service.entity.InventoryReservation;
 import com.ecommers.inventory_service.entity.OutboxEvent;
 import com.ecommers.inventory_service.entity.ReservationStatus;
-import com.ecommers.inventory_service.events.InventoryReservedEventSuccess;
-// import com.ecommers.inventory_service.entity.InventoryReservation;
-// import com.ecommers.inventory_service.entity.ReservationStatus;
-// import com.ecommers.inventory_service.events.InventoryReservedEventFail;
-// import com.ecommers.inventory_service.events.InventoryReservedEventSuccess;
 import com.ecommers.inventory_service.events.OrderCreatedEvent;
 import com.ecommers.inventory_service.producer.InventoryEventProducer;
-// import com.ecommers.inventory_service.producer.InventoryEventProducer;
 import com.ecommers.inventory_service.repository.InventoryRepository;
 import com.ecommers.inventory_service.repository.InventoryReservationRepository;
 import com.ecommers.inventory_service.repository.OutboxRepository;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.shop.events.BaseEvent;
-
+import com.shop.events.InventoryReservedEventSuccess;
+import com.shop.events.InventoryReservedItemDto;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -181,6 +174,7 @@ public class InventoryService {
                 .map(orderItem -> InventoryReservedItemDto.builder()
                 .productId(orderItem.getProductId())
                 .reservedQuantity(orderItem.getQuantity())
+                .orderId(event.getOrderId())
                 .build())
                 .collect(Collectors.toList()))
                 .reservationStatus(ReservationStatus.CONFIRMED.name())

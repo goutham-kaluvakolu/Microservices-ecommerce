@@ -1,4 +1,4 @@
-package com.ecommers.inventory_service.dto;
+package com.shop.events;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -13,4 +13,5 @@ public class InventoryReservedItemDto {
     private String productId;
     private Integer reservedQuantity; // Quantity that was successfully reserved
     private String orderId;
+    private double priceAtOrderTime;
 }

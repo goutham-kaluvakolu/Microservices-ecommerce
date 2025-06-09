@@ -1,7 +1,8 @@
 package com.ecommers.inventory_service.events;
-import com.ecommers.inventory_service.dto.InventoryReservedItemDto;
 // import com.ecommers.inventory_service.entity.InventoryReservation.InventoryReservationBuilder;
 
+
+import com.shop.events.InventoryReservedItemDto;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

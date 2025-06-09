@@ -1,5 +1,4 @@
-package com.ecommers.inventory_service.events;
-import com.ecommers.inventory_service.dto.InventoryReservedItemDto;
+package com.shop.events;
 // import com.ecommers.inventory_service.entity.InventoryReservation.InventoryReservationBuilder;
 
 
@@ -7,9 +6,9 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
 import java.time.LocalDateTime;
 import java.util.List;
+
 
 // This DTO will likely be re-used from your order-service,
 // or defined identically in inventory-service if it's a shared contract

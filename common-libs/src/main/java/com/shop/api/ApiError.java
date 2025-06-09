@@ -9,9 +9,9 @@ import lombok.NoArgsConstructor;
 import java.util.Map;
 
 @Data
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
 public class ApiError {
     private String code;         // A unique error code (e.g., "RESOURCE_NOT_FOUND", "VALIDATION_ERROR")
     private String message;      // A human-readable error message
